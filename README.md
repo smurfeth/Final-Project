@@ -1,4 +1,3 @@
-# Final-Project
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -184,7 +183,7 @@ namespace CATADMAN_final
         public string Address { get; set; }
         public string ContactPerson { get; set; }
         public string Contactno { get; set; }
-        // REMOVED: public List<string> MedicalHistory { get; set; }
+     
         public List<Appointment> MyAppointments = new List<Appointment>();
 
         public Patient(string username, string password, string fullName, int age, string contact, string address, string contactPerson, string contactNo)
@@ -195,7 +194,6 @@ namespace CATADMAN_final
             Address = address;
             ContactPerson = contactPerson;
             Contactno = contactNo;
-            // REMOVED: MedicalHistory = new List<string>();
         }
         public override void DisplayMenu()
         {
@@ -224,11 +222,9 @@ namespace CATADMAN_final
                         CancelAppointment();
                         break;
                     case 4:
-                        // FIX CS0176: Use class name directly
                         MedicalHistoryManager.AddSelfReportedRecord(this);
                         break;
                     case 5:
-                        // FIX CS0176: Use class name directly
                         MedicalHistoryManager.ViewHistory(fullname);
                         break;
                     case 6:
@@ -374,8 +370,7 @@ namespace CATADMAN_final
                 Program.Patients.Add(patient);
                 Program.SavePatients();
                 Console.WriteLine("New patient registered successfully!");
-
-                // FIX CS0176: Use class name directly
+                
                 MedicalHistoryManager.AddSelfReportedRecord(patient);
             }
             else
@@ -384,7 +379,6 @@ namespace CATADMAN_final
                 Console.Write("Do you need to update their medical history? (Y/N): ");
                 if (Console.ReadLine().Trim().ToUpper() == "Y")
                 {
-                    // FIX CS0176: Use class name directly
                     MedicalHistoryManager.AddSelfReportedRecord(patient);
                 }
             }
@@ -405,7 +399,6 @@ namespace CATADMAN_final
             int slotIndex = 1;
             var availableSlotsMap = new Dictionary<int, (DateTime date, string time)>();
 
-            // Loop through time slots and days
             foreach (string slot in Program.TimeSlots)
             {
                 Console.Write(slot.PadRight(8));
@@ -414,7 +407,6 @@ namespace CATADMAN_final
                 {
                     DateTime day = today.AddDays(d);
 
-                    // Check if booked
                     bool booked = appointments.Any(a =>
                     {
                         if (a.Type == "FREE" || a.Type == "BUSY") return false;
@@ -471,11 +463,9 @@ namespace CATADMAN_final
             DateTime date = selectedSlotData.date;
             string time = selectedSlotData.time;
 
-            // Record and Load Appointment
             var newAppointment = new Appointment(patient.fullname, purpose, date, time, true, "WALKIN");
             Program.Appointments.Add(newAppointment);
 
-            // If patient is not already in waiting list, add them.
             if (!Program.Queue.WaitingList.Any(p => p.fullname.Equals(patient.fullname, StringComparison.OrdinalIgnoreCase)))
             {
                 Program.Queue.WaitingList.Add(patient);
@@ -521,8 +511,7 @@ namespace CATADMAN_final
                 Console.WriteLine("No appointment found with that purpose.");
             }
         }
-        // DELETED: public void AddMedicalHistoryRecord() { ... }
-        // DELETED: public void ViewMedicalHistory() { ... }
+       
     }
 
     public class Doctor : User
@@ -654,7 +643,6 @@ namespace CATADMAN_final
             }
 
             string record = $"{DateTime.Now:yyyy-MM-dd} - Prescription by Dr. {fullname}: {prescription}";
-            // FIX CS0176: Use class name directly
             MedicalHistoryManager.AddRecord(name, record);
             Console.WriteLine("Prescription recorded successfully.");
         }
@@ -665,8 +653,6 @@ namespace CATADMAN_final
             string name = Console.ReadLine();
             var patient = Program.GetPatientByName(name);
             if (patient == null) { Console.WriteLine("Patient not found."); return; }
-
-            // FIX CS0176: Use class name directly
             MedicalHistoryManager.ViewHistory(name);
         }
 
@@ -687,7 +673,6 @@ namespace CATADMAN_final
             }
 
             string fullRecord = $"{DateTime.Now:yyyy-MM-dd} - Doctor {fullname} Record: {record}";
-            // FIX CS0176: Use class name directly
             MedicalHistoryManager.AddRecord(name, fullRecord);
             Console.WriteLine($"Medical history record added for {name} by Dr. {fullname}.");
         }
@@ -896,13 +881,8 @@ namespace CATADMAN_final
             table.Write();
         }
     }
-
-    // =========================================================================
-    // *** NEW CENTRALIZED MEDICAL HISTORY MANAGER CLASS ***
-    // =========================================================================
     public static class MedicalHistoryManager
     {
-        // Key: Patient Full Name (string), Value: List of Medical Records (List<string>)
         public static Dictionary<string, List<string>> Records = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
         public static void AddRecord(string patientName, string record)
@@ -914,8 +894,6 @@ namespace CATADMAN_final
             Records[patientName].Add(record);
             Program.SavePatients();
         }
-
-        // Used by Patient (self-reporting) and Receptionist (during registration/walk-in)
         public static void AddSelfReportedRecord(Patient patient)
         {
             Console.WriteLine($"\n---------- MEDICAL HISTORY FORM for {patient.fullname} (Self-Report) ----------\n");
@@ -1002,18 +980,12 @@ namespace CATADMAN_final
             }
         }
     }
-
-    // =========================================================================
-    // *** PROGRAM CLASS (UPDATED) ***
-    // =========================================================================
     public class Program
     {
         public static QueueManager Queue = new QueueManager();
         public static List<Appointment> Appointments = new List<Appointment>();
         public static List<Patient> Patients = new List<Patient>();
         public static Doctor AttendingDoctor;
-        // DELETED: public static MedicalHistoryManager MedicalHistoryManager { get; } = null; 
-
         public static string PatientFile = "patients.txt";
         public static string AppointmentFile = "appointments.txt";
         public static string ArchiveFolder = "Archive";
@@ -1115,8 +1087,6 @@ namespace CATADMAN_final
                             Patients.Add(newPatient);
                             SavePatients();
                             Console.WriteLine("Registered successfully!");
-
-                            // FIX CS0176: Use class name directly
                             MedicalHistoryManager.AddSelfReportedRecord(newPatient);
                         }
                         else Console.WriteLine("Invalid choice.");
@@ -1157,7 +1127,6 @@ namespace CATADMAN_final
             {
                 foreach (var p in Patients)
                 {
-                    // FIX CS0176: Use class name directly
                     string history = MedicalHistoryManager.SerializeHistory(p.fullname);
                     writer.WriteLine($"{p.username}|{p.password}|{p.fullname}|{p.Age}|{p.Contact}|{p.Address}|{p.ContactPerson}|{p.Contactno}|{history}");
                 }
@@ -1207,8 +1176,6 @@ namespace CATADMAN_final
                         data[6], // contactPerson
                         data[7]  // contactNo
                     );
-
-                    // FIX CS0176: Use class name directly
                     MedicalHistoryManager.DeserializeHistory(newPatient.fullname, data[8]);
 
                     Patients.Add(newPatient);
@@ -1281,7 +1248,6 @@ namespace CATADMAN_final
             }
             Queue.SortByPriority();
         }
-
         public static List<string> GetFreeSlotsForDate(DateTime date)
         {
             var taken = new HashSet<string>();
@@ -1308,7 +1274,6 @@ namespace CATADMAN_final
 
                 if (choice == "1")
                 {
-                    // Free a slot logic (keep as is)
                     Console.Write("Enter date to modify (YYYY-MM-DD): ");
                     if (!DateTime.TryParse(Console.ReadLine(), out DateTime selectedDate))
                     {
@@ -1373,10 +1338,6 @@ namespace CATADMAN_final
                 }
             }
         }
-
-        // DELETED: public static void AddMedicalHistoryFromReceptionist(Patient patient) { ... }
-
-
         public static void DisplayCalendarForPatient()
         {
             DateTime today = DateTime.Today;
@@ -1461,18 +1422,14 @@ namespace CATADMAN_final
 
         public static void ViewCombinedServiceOrderForDoctor()
         {
-            // Define TODAY's date for strict filtering
             var today = DateTime.Today.Date;
             var allAppointments = Program.Appointments;
-
-            // 1a. Upcoming Appointments List (STRICTLY TODAY)
             var upcomingAppointments = allAppointments
                 .Where(a => a.Type == "APPOINTMENT" && a.Date.Date == today)
                 .OrderBy(a => a.Date)
                 .ThenBy(a => TimeSpan.Parse(a.Time))
                 .ToList();
 
-            // 1b. Walk-in Queue (STRICTLY TODAY)
             List<dynamic> walkinQueue = Program.Queue.WaitingList.Select(w =>
             {
                 var walkinApp = allAppointments
@@ -1519,7 +1476,6 @@ namespace CATADMAN_final
                 .OrderBy(c => c.ServiceTime)
                 .ToList();
 
-            // Update Header to reflect today's date
             Console.WriteLine($"\n--- DOCTOR'S SERVICE ORDER QUEUE ({today:MMM dd, yyyy}) ---");
             if (finalServiceOrder.Count == 0)
             {
