@@ -20,7 +20,7 @@ namespace CATADMAN_final
         private string Password;
         private string FullName;
         public string username { get { return Username; } set { Username = value; } }
-        public string password { get { return Password; } set { Password = value; } }
+        public string password { get { return Password; } }
         public string fullname { get { return FullName; } set { FullName = value; } }
 
         public User(string username, string password, string fullname)
@@ -53,7 +53,7 @@ namespace CATADMAN_final
                 Console.WriteLine("[2] View All Appointments");
                 Console.WriteLine("[3] Serve Next Patient");
                 Console.WriteLine("[4] Skip Walk-in Patient");
-                Console.WriteLine("[5] Manage Calendar (Assign Walk-in)");
+                Console.WriteLine("[5] Assign Walk-in");
                 Console.WriteLine("[6] Reset Appointments and Queue (Archive)");
                 Console.WriteLine("[7] Logout");
                 Console.Write("Enter Choice: ");
@@ -183,7 +183,7 @@ namespace CATADMAN_final
         public string Address { get; set; }
         public string ContactPerson { get; set; }
         public string Contactno { get; set; }
-     
+
         public List<Appointment> MyAppointments = new List<Appointment>();
 
         public Patient(string username, string password, string fullName, int age, string contact, string address, string contactPerson, string contactNo)
@@ -204,9 +204,8 @@ namespace CATADMAN_final
                 Console.WriteLine("[1] Book Appointment");
                 Console.WriteLine("[2] View Appointments");
                 Console.WriteLine("[3] Cancel Appointment");
-                Console.WriteLine("[4] Update Medical History (Self-Report)");
-                Console.WriteLine("[5] View Medical History");
-                Console.WriteLine("[6] Logout");
+                Console.WriteLine("[4] View Medical History");
+                Console.WriteLine("[5] Logout");
                 Console.Write("Enter choice: ");
                 if (!int.TryParse(Console.ReadLine(), out int Choice)) Choice = -1;
 
@@ -222,12 +221,9 @@ namespace CATADMAN_final
                         CancelAppointment();
                         break;
                     case 4:
-                        MedicalHistoryManager.AddSelfReportedRecord(this);
-                        break;
-                    case 5:
                         MedicalHistoryManager.ViewHistory(fullname);
                         break;
-                    case 6:
+                    case 5:
                         running = false;
                         Logout();
                         break;
@@ -370,17 +366,11 @@ namespace CATADMAN_final
                 Program.Patients.Add(patient);
                 Program.SavePatients();
                 Console.WriteLine("New patient registered successfully!");
-                
-                MedicalHistoryManager.AddSelfReportedRecord(patient);
+
             }
             else
             {
                 Console.WriteLine($"\nPatient '{walkinName}' found (Age: {patient.Age}).");
-                Console.Write("Do you need to update their medical history? (Y/N): ");
-                if (Console.ReadLine().Trim().ToUpper() == "Y")
-                {
-                    MedicalHistoryManager.AddSelfReportedRecord(patient);
-                }
             }
 
             DateTime today = DateTime.Today;
@@ -388,7 +378,6 @@ namespace CATADMAN_final
 
             Console.Clear();
             Console.WriteLine("=== Weekly Appointment Calendar ===");
-
             Console.Write("Time".PadRight(8));
             for (int d = 0; d < 7; d++)
             {
@@ -398,7 +387,6 @@ namespace CATADMAN_final
 
             int slotIndex = 1;
             var availableSlotsMap = new Dictionary<int, (DateTime date, string time)>();
-
             foreach (string slot in Program.TimeSlots)
             {
                 Console.Write(slot.PadRight(8));
@@ -445,7 +433,7 @@ namespace CATADMAN_final
 
             if (availableSlotsMap.Count == 0)
             {
-                Console.WriteLine("\nNo available slots for assignment in the next week.");
+                Console.WriteLine("\nNo available slots for the next week.");
                 Console.WriteLine("Press any key to return...");
                 Console.ReadKey();
                 return;
@@ -462,7 +450,6 @@ namespace CATADMAN_final
             var selectedSlotData = availableSlotsMap[choiceNum];
             DateTime date = selectedSlotData.date;
             string time = selectedSlotData.time;
-
             var newAppointment = new Appointment(patient.fullname, purpose, date, time, true, "WALKIN");
             Program.Appointments.Add(newAppointment);
 
@@ -511,7 +498,6 @@ namespace CATADMAN_final
                 Console.WriteLine("No appointment found with that purpose.");
             }
         }
-       
     }
 
     public class Doctor : User
@@ -533,7 +519,7 @@ namespace CATADMAN_final
                 Console.WriteLine("[1] View Queue");
                 Console.WriteLine("[2] View Appointments");
                 Console.WriteLine("[3] Cancel Appointment");
-                Console.WriteLine("[4] Prescribe Medicine (Adds to History)");
+                Console.WriteLine("[4] Prescribe Medicine");
                 Console.WriteLine("[5] View Patient Medical History");
                 Console.WriteLine("[6] Add Patient Medical History Record");
                 Console.WriteLine("[7] Logout");
@@ -625,12 +611,11 @@ namespace CATADMAN_final
         }
         public void Prescribe()
         {
-            Console.Write("\nEnter Patient's Name: ");
-            string name = Console.ReadLine();
-            var patient = Program.GetPatientByName(name);
+            var patient = Program.SearchAndSelectPatient("Enter Patient's Name to Prescribe for");
             if (patient == null)
             {
-                Console.WriteLine("Patient not found.");
+                Console.WriteLine("Operation cancelled.");
+                Console.ReadKey();
                 return;
             }
 
@@ -638,43 +623,57 @@ namespace CATADMAN_final
             string prescription = Console.ReadLine();
             if (string.IsNullOrWhiteSpace(prescription))
             {
-                Console.WriteLine("No prescription entered.");
+                Console.WriteLine("No prescription entered. Operation cancelled.");
                 return;
             }
 
             string record = $"{DateTime.Now:yyyy-MM-dd} - Prescription by Dr. {fullname}: {prescription}";
-            MedicalHistoryManager.AddRecord(name, record);
-            Console.WriteLine("Prescription recorded successfully.");
+            MedicalHistoryManager.AddRecord(patient.fullname, record);
+            Console.WriteLine($"Prescription recorded successfully for {patient.fullname}.");
+            Console.ReadKey();
         }
 
         public void ViewPatientHistory()
         {
-            Console.Write("\nEnter Patient's Name: ");
-            string name = Console.ReadLine();
-            var patient = Program.GetPatientByName(name);
-            if (patient == null) { Console.WriteLine("Patient not found."); return; }
-            MedicalHistoryManager.ViewHistory(name);
+            var patient = Program.SearchAndSelectPatient("Enter Patient's Name to View History for");
+            if (patient == null)
+            {
+                Console.WriteLine("Operation cancelled.");
+                Console.ReadKey();
+                return;
+            }
+
+            MedicalHistoryManager.ViewHistory(patient.fullname);
         }
 
         public void AddPatientHistoryRecord()
         {
-            Console.Write("\nEnter Patient's Name: ");
-            string name = Console.ReadLine();
-            var patient = Program.GetPatientByName(name);
-            if (patient == null) { Console.WriteLine("Patient not found."); return; }
-
-            Console.Write("Enter Medical Condition/Record to add: ");
-            string record = Console.ReadLine();
-
-            if (string.IsNullOrWhiteSpace(record))
+            var patient = Program.SearchAndSelectPatient("Enter Patient's Name to Add Record for");
+            if (patient == null)
             {
-                Console.WriteLine("Record cannot be empty.");
+                Console.WriteLine("Operation cancelled.");
                 return;
             }
 
-            string fullRecord = $"{DateTime.Now:yyyy-MM-dd} - Doctor {fullname} Record: {record}";
-            MedicalHistoryManager.AddRecord(name, fullRecord);
-            Console.WriteLine($"Medical history record added for {name} by Dr. {fullname}.");
+            Console.WriteLine($"\n--- Adding Record for {patient.fullname} ---");
+
+            MedicalHistoryManager.AddIntakeRecordFromDoctor(patient);
+
+            Console.Write("\nEnter additional Diagnosis:");
+            string record = Console.ReadLine();
+
+            if (!string.IsNullOrWhiteSpace(record))
+            {
+                string fullRecord = $"{DateTime.Now:yyyy-MM-dd} - Doctor {fullname} Diagnosis: {record}";
+                MedicalHistoryManager.AddRecord(patient.fullname, fullRecord);
+            }
+            else
+            {
+                Console.WriteLine("Additional diagnosis skipped.");
+            }
+
+            Console.WriteLine("\nMedical history record(s) recorded successfully!");
+           
         }
     }
     public class Appointment : Imanage
@@ -881,6 +880,7 @@ namespace CATADMAN_final
             table.Write();
         }
     }
+
     public static class MedicalHistoryManager
     {
         public static Dictionary<string, List<string>> Records = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
@@ -894,9 +894,9 @@ namespace CATADMAN_final
             Records[patientName].Add(record);
             Program.SavePatients();
         }
-        public static void AddSelfReportedRecord(Patient patient)
+        public static void AddIntakeRecordFromDoctor(Patient patient)
         {
-            Console.WriteLine($"\n---------- MEDICAL HISTORY FORM for {patient.fullname} (Self-Report) ----------\n");
+            Console.WriteLine($"\n---------- MEDICAL HISTORY INTAKE FORM for {patient.fullname} ----------\n");
 
             var options = new List<string>
             {
@@ -929,8 +929,7 @@ namespace CATADMAN_final
             {
                 if (condition == "No known medical conditions" && selected.Count > 1) continue;
                 if (string.IsNullOrWhiteSpace(condition)) continue;
-
-                string record = $"Self-Reported Condition: {condition}";
+                string record = $"{DateTime.Now:yyyy-MM-dd} - Intake Condition: {condition}";
 
                 if (!Records.ContainsKey(patient.fullname) || !Records[patient.fullname].Contains(record))
                 {
@@ -938,9 +937,8 @@ namespace CATADMAN_final
                 }
             }
 
-            Console.WriteLine("\nMedical history record(s) added/updated successfully.\n");
+            Console.WriteLine("\nMedical history record(s) recorded successfully by Doctor.\n");
         }
-
         public static void ViewHistory(string patientName)
         {
             Console.WriteLine($"\nMEDICAL HISTORY of {patientName}");
@@ -989,8 +987,67 @@ namespace CATADMAN_final
         public static string PatientFile = "patients.txt";
         public static string AppointmentFile = "appointments.txt";
         public static string ArchiveFolder = "Archive";
-
         public static readonly string[] TimeSlots = { "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00", "18:30" };
+        public static Patient SearchAndSelectPatient(string prompt)
+        {
+            var allPatients = Program.Patients
+                .Select(p => new
+                {
+                    Patient = p,
+                    Display = $"{p.fullname} (Username: {p.username}, Contact: {p.Contactno})"
+                })
+                .ToList();
+
+            if (allPatients.Count == 0)
+            {
+                AnsiConsole.MarkupLine("[red]No patient records available for search.[/]");
+                Console.ReadKey();
+                return null;
+            }
+
+            Console.Clear();
+            var searchPrompt = AnsiConsole.Prompt(
+                new TextPrompt<string>($"\n[bold yellow]{prompt}[/]:")
+                .AllowEmpty()
+            ).ToLower();
+
+            if (string.IsNullOrWhiteSpace(searchPrompt))
+            {
+                AnsiConsole.MarkupLine("[red]Search cancelled.[/]");
+                Console.ReadKey();
+                return null;
+            }
+
+            var filteredMatches = allPatients
+                .Where(p =>
+                    p.Patient.fullname.ToLower().Contains(searchPrompt) ||
+                    p.Patient.username.ToLower().Contains(searchPrompt))
+                .ToList();
+
+            if (filteredMatches.Count == 0)
+            {
+                AnsiConsole.MarkupLine($"[red]No patients found matching '{searchPrompt}'.[/]");
+                Console.ReadKey();
+                return null;
+            }
+
+            var selectedItem = AnsiConsole.Prompt(
+                new SelectionPrompt<string>()
+                    .Title($"[green]Found {filteredMatches.Count} match(es). Select the patient:[/]")
+                    .PageSize(10)
+                    .AddChoices(filteredMatches.Select(m => m.Display))
+            );
+
+            var finalPatient = filteredMatches.FirstOrDefault(m => m.Display == selectedItem);
+
+            if (finalPatient != null)
+            {
+                AnsiConsole.MarkupLine($"[green]Selected Patient: {finalPatient.Patient.fullname}[/]");
+                return finalPatient.Patient;
+            }
+
+            return null;
+        }
 
         static void Main(string[] args)
         {
@@ -1087,7 +1144,8 @@ namespace CATADMAN_final
                             Patients.Add(newPatient);
                             SavePatients();
                             Console.WriteLine("Registered successfully!");
-                            MedicalHistoryManager.AddSelfReportedRecord(newPatient);
+
+                            // No automatic medical history collection during registration
                         }
                         else Console.WriteLine("Invalid choice.");
                         break;
@@ -1176,6 +1234,7 @@ namespace CATADMAN_final
                         data[6], // contactPerson
                         data[7]  // contactNo
                     );
+
                     MedicalHistoryManager.DeserializeHistory(newPatient.fullname, data[8]);
 
                     Patients.Add(newPatient);
@@ -1248,6 +1307,7 @@ namespace CATADMAN_final
             }
             Queue.SortByPriority();
         }
+
         public static List<string> GetFreeSlotsForDate(DateTime date)
         {
             var taken = new HashSet<string>();
@@ -1429,7 +1489,6 @@ namespace CATADMAN_final
                 .OrderBy(a => a.Date)
                 .ThenBy(a => TimeSpan.Parse(a.Time))
                 .ToList();
-
             List<dynamic> walkinQueue = Program.Queue.WaitingList.Select(w =>
             {
                 var walkinApp = allAppointments
@@ -1509,6 +1568,13 @@ namespace CATADMAN_final
         public static void ArchiveAndResetAll()
         {
             string date = DateTime.Now.ToString("yyyy-MM-dd");
+
+            if (File.Exists(PatientFile))
+            {
+                string patientsArchive = Path.Combine(ArchiveFolder, $"patients_{date}.txt");
+                File.Copy(PatientFile, patientsArchive, true);
+                Console.WriteLine($"Patients archived to {patientsArchive}");
+            }
 
             if (File.Exists(AppointmentFile))
             {
