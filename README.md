@@ -155,7 +155,7 @@ namespace CATADMAN_final
             Console.WriteLine("\n--- SERVICE ORDER QUEUE ---");
             if (finalServiceOrder.Count == 0)
             {
-                Console.WriteLine("No patients in the queue or with assigned appointments.");
+                Console.WriteLine("No patients in the queue.");
                 return;
             }
 
@@ -346,8 +346,6 @@ namespace CATADMAN_final
             Patient patient = Program.GetPatientByName(walkinName);
             if (patient == null)
             {
-                Console.WriteLine("\n--- NEW WALK-IN PATIENT REGISTRATION ---");
-
                 string u = $"WALKIN_{Guid.NewGuid().ToString().Substring(0, 4)}";
                 string pw = "walkin_default";
 
@@ -558,7 +556,7 @@ namespace CATADMAN_final
         }
         public void ViewAppointments()
         {
-            Console.WriteLine("\nAPPOINTMENTS (APPOINTMENT type only, sorted by date/time)");
+            Console.WriteLine("\n===== APPOINTMENTS =====");
             var apptsOnly = Program.Appointments
                 .Where(a => a.Type == "APPOINTMENT")
                 .OrderBy(a => a.Date).ThenBy(a => TimeSpan.Parse(a.Time))
@@ -1144,8 +1142,6 @@ namespace CATADMAN_final
                             Patients.Add(newPatient);
                             SavePatients();
                             Console.WriteLine("Registered successfully!");
-
-                            // No automatic medical history collection during registration
                         }
                         else Console.WriteLine("Invalid choice.");
                         break;
@@ -1236,10 +1232,8 @@ namespace CATADMAN_final
                     );
 
                     MedicalHistoryManager.DeserializeHistory(newPatient.fullname, data[8]);
-
                     Patients.Add(newPatient);
                 }
-
                 Console.WriteLine("Patient records successfully loaded.");
             }
             catch (IOException ioEx)
@@ -1307,7 +1301,6 @@ namespace CATADMAN_final
             }
             Queue.SortByPriority();
         }
-
         public static List<string> GetFreeSlotsForDate(DateTime date)
         {
             var taken = new HashSet<string>();
@@ -1493,7 +1486,6 @@ namespace CATADMAN_final
             {
                 var walkinApp = allAppointments
                     .FirstOrDefault(a => a.Type == "WALKIN" && a.PatientName.Equals(w.fullname, StringComparison.OrdinalIgnoreCase) && a.Date.Date == today);
-
                 return (dynamic)new
                 {
                     Patient = w,
@@ -1505,9 +1497,7 @@ namespace CATADMAN_final
                 .ThenBy(item => TimeSpan.Parse(item.Appointment.Time))
                 .ThenBy(item => Program.GetQueueArrivalIndex(item.Patient))
                 .ToList();
-
             var combinedList = new List<dynamic>();
-
             foreach (var a in upcomingAppointments)
             {
                 var p = Program.GetPatientByName(a.PatientName) ?? new Patient(a.PatientName, "", a.PatientName, 0, "", "", "", "");
@@ -1538,7 +1528,7 @@ namespace CATADMAN_final
             Console.WriteLine($"\n--- DOCTOR'S SERVICE ORDER QUEUE ({today:MMM dd, yyyy}) ---");
             if (finalServiceOrder.Count == 0)
             {
-                Console.WriteLine("No patients in the queue or with assigned appointments for today.");
+                Console.WriteLine("No patients in the queue or with appointments for today.");
                 return;
             }
 
